@@ -1,0 +1,57 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachineInstanceReplicaSet
+metadata:
+  name: cirros-vmirs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      distro: cirros
+  template:
+    metadata:
+      name: cirros
+      labels:
+        distro: cirros
+    spec:
+      tolerations:
+      - key: "node.kubernetes.io/unreachable"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 5
+      - key: "node.kubernetes.io/not-ready"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 5
+      domain:
+        cpu:
+          cores: 1
+        devices:
+          disks:
+          - disk:
+              bus: virtio
+            name: disk0
+          - cdrom:
+              bus: sata
+              readonly: true
+            name: cloudinitdisk
+          interfaces:
+          - name: default
+            masquerade: {}
+        machine:
+          type: q35
+        resources:
+          requests:
+            memory: 512M
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: disk0
+        persistentVolumeClaim:
+          claimName: cirros
+      - cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            hostname: cirros
+            ssh_pwauth: true
+        name: cloudinitdisk
